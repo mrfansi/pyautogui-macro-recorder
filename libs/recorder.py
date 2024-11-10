@@ -1,12 +1,9 @@
 import time
 import threading
 import keyboard
-# import mouse
 import pyautogui
-import os
 from pathlib import Path
 import shutil
-from libs.image_gallery import ImageGallery
 import logging
 from pynput import mouse
 
