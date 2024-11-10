@@ -1,13 +1,14 @@
 import time
 import threading
 import keyboard
-import mouse
+# import mouse
 import pyautogui
 import os
 from pathlib import Path
 import shutil
 from image_gallery import ImageGallery
 import logging
+from pynput import mouse
 
 class MacroGenerator:
     def __init__(self):
@@ -202,6 +203,8 @@ class Recorder:
             level=logging.DEBUG,
             format='%(asctime)s - %(levelname)s - %(message)s'
         )
+        self.mouse_listener = None
+        self.keyboard_listener = None
     
     def clear_screens_directory(self):
         """Очищает директорию скриншотов"""
@@ -290,7 +293,10 @@ class Recorder:
     def stop(self):
         self.running = False
         keyboard.unhook_all()
-        mouse.unhook_all()
+        if self.mouse_listener:
+            self.mouse_listener.stop()
+        if self.keyboard_listener:
+            self.keyboard_listener.stop()
         
         # Ждем завершения потока отслеживания мыши
         if hasattr(self, 'mouse_thread') and self.mouse_thread.is_alive():
@@ -301,7 +307,7 @@ class Recorder:
     def track_mouse_movement(self):
         while self.running:
             if not self.is_dragging:
-                current_pos = mouse.get_position()
+                current_pos = pyautogui.position()
                 if current_pos != self.last_mouse_position:
                     self.actions.append(('move', current_pos[0], current_pos[1], 
                                        time.time() - self.start_time))
@@ -335,21 +341,20 @@ class Recorder:
         self.last_action_time = timestamp
         return False
     
-    def on_mouse_event(self, event):
+    def on_mouse_event(self, x, y, button=None, pressed=None, delta=0):
         if not self.running:
             return
         
         timestamp = time.time() - self.start_time
-        event_type = event.__class__.__name__
-        x, y = mouse.get_position()
+        event_type = 'ButtonEvent' if pressed else 'ButtonReleaseEvent'
         
         # Фильтруем частые повторяющиеся события
         if self.filter_repeated_event(timestamp, event_type, x, y):
             return
         
         if event_type == 'ButtonEvent':
-            if event.button == 'left':
-                if event.event_type == 'down':
+            if button == mouse.Button.left:
+                if pressed:
                     logging.debug(f"Left mouse button down at ({x}, {y})")
                     try:
                         if self.is_double_click(x, y, timestamp, 'down'):
@@ -365,13 +370,13 @@ class Recorder:
                         else:
                             # Обычный клик
                             screenshot_num = self.take_screenshot_around_click(x, y)
-                            self.actions.append(('mouseDown', x, y, event.button, timestamp, screenshot_num))
+                            self.actions.append(('mouseDown', x, y, button.name, timestamp, screenshot_num))
                     except Exception as e:
                         logging.error(f"Error processing mouse event: {e}")
                 
                     self.is_dragging = True
                     self.last_mouse_position = (x, y)
-                elif event.event_type == 'up':
+                else:
                     logging.debug(f"Left mouse button up at ({x}, {y})")
                     try:
                         if self.is_double_click(x, y, timestamp, 'up'):
@@ -387,19 +392,19 @@ class Recorder:
                         else:
                             if self.is_dragging:
                                 self.actions.append(('move', x, y, timestamp))
-                            self.actions.append(('mouseUp', x, y, event.button, timestamp))
+                            self.actions.append(('mouseUp', x, y, button.name, timestamp))
                     except Exception as e:
                         logging.error(f"Error processing mouse event: {e}")
                 
                     self.is_dragging = False
-                else:  # другие кнопки мыши
-                    if event.event_type == 'down':
-                        self.actions.append(('mouseDown', x, y, event.button, timestamp, None))
-                    elif event.event_type == 'up':
-                        self.actions.append(('mouseUp', x, y, event.button, timestamp))
+            else:  # другие кнопки мыши
+                if pressed:
+                    self.actions.append(('mouseDown', x, y, button.name, timestamp, None))
+                else:
+                    self.actions.append(('mouseUp', x, y, button.name, timestamp))
                 
         elif event_type == 'WheelEvent':
-            self.actions.append(('scroll', x, y, 0, event.delta, timestamp))
+            self.actions.append(('scroll', x, y, 0, delta, timestamp))
             
         elif event_type == 'MoveEvent' and self.is_dragging:
             if (x, y) != self.last_mouse_position:
@@ -418,7 +423,12 @@ class Recorder:
         
         # Устанавливаем обработчики событий
         keyboard.hook(self.on_keyboard_event)
-        mouse.hook(self.on_mouse_event)
+        self.mouse_listener = mouse.Listener(
+            on_move=self.on_mouse_event,
+            on_click=self.on_mouse_event,
+            on_scroll=self.on_mouse_event
+        )
+        self.mouse_listener.start()
 
     def _normalize_key(self, key):
         """Преобразует название клавиши в орректный формат для PyAutoGUI"""
