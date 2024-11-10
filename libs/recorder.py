@@ -385,8 +385,15 @@ class Recorder:
             return
         
         try:
+            # Skip events with None key name
+            if event.name is None:
+                return
+                
             # Normalize the key name
             normalized_key = self._normalize_key(event.name)
+            if not normalized_key:  # Skip empty keys
+                return
+                
             timestamp = time.time() - self.start_time
             
             if event.event_type == 'down':
@@ -478,6 +485,8 @@ class Recorder:
 
     def _normalize_key(self, key):
         """Normalizes the key name to the correct format for PyAutoGUI"""
+        if key is None:
+            return ''  # Return empty string for None keys
         return self.key_replacements.get(key.lower(), key)
 
     def clear_recording(self):
