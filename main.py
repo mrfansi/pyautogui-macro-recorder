@@ -1,6 +1,6 @@
 from PyQt5 import QtWidgets, QtCore
-from recorder import Recorder
-from player import ActionPlayer
+from libs.recorder import Recorder
+from libs.player import ActionPlayer
 from gui import MainWindow
 
 def main():

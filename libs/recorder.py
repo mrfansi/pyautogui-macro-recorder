@@ -6,7 +6,7 @@ import pyautogui
 import os
 from pathlib import Path
 import shutil
-from image_gallery import ImageGallery
+from libs.image_gallery import ImageGallery
 import logging
 from pynput import mouse
 

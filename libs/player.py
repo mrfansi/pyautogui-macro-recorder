@@ -22,7 +22,12 @@ class ActionPlayer:
     def __init__(self):
         self.running = False
         self.log_handler = None
-        self.log_callback = self._default_log_handler  # Set default callback
+        self.log_callback = self._default_log_handler
+        
+        # Create logs directory if it doesn't exist
+        self.logs_dir = Path("logs")
+        self.logs_dir.mkdir(exist_ok=True)
+        
         self.cleanup_logging()  # Initialize clean logging state
     
     def cleanup_logging(self):
@@ -32,14 +37,19 @@ class ActionPlayer:
         for handler in logger.handlers[:]:
             logger.removeHandler(handler)
         
+        # Setup log file path
+        log_file = self.logs_dir / "player_debug.log"
+        
         # Reinitialize basic logging
-        logging.basicConfig(level=logging.DEBUG,
-                          format='%(asctime)s - %(levelname)s - %(message)s',
-                          force=True,
-                          handlers=[
-                              logging.FileHandler('player_debug.log', encoding='utf-8'),
-                              logging.StreamHandler(sys.stdout)
-                          ])
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format='%(asctime)s - %(levelname)s - %(message)s',
+            force=True,
+            handlers=[
+                logging.FileHandler(str(log_file), encoding='utf-8'),
+                logging.StreamHandler(sys.stdout)
+            ]
+        )
     
     def _default_log_handler(self, message, level="INFO"):
         """Default handler that prints to console"""

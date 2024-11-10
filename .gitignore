@@ -26,3 +26,5 @@ screens/
 projects/
 *.png 
 player_debug.log
+logs/
+*.log
