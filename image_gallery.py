@@ -7,22 +7,22 @@ import math
 class ImageGallery(tk.Toplevel):
     def __init__(self, parent, image_dir):
         super().__init__(parent)
-        self.title("Галерея скриншотов")
+        self.title("Screenshot Gallery")
         self.geometry("800x600")
         
-        # Делаем окно модальным
+        # Make the window modal
         self.transient(parent)
         self.grab_set()
         
-        # Создаем кнопку закрытия
+        # Create a close button
         self.close_button = ttk.Button(
             self, 
-            text="Закрыть", 
+            text="Close", 
             command=self.destroy
         )
         self.close_button.pack(pady=5)
         
-        # Создаем холст с прокруткой
+        # Create a scrollable canvas
         self.canvas = tk.Canvas(self)
         scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
         self.scrollable_frame = ttk.Frame(self.canvas)
@@ -35,18 +35,18 @@ class ImageGallery(tk.Toplevel):
         self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
         self.canvas.configure(yscrollcommand=scrollbar.set)
         
-        # Размещаем элементы
+        # Place elements
         self.canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
         
-        # Загружаем и отображаем изображения
+        # Load and display images
         self.load_images(image_dir)
         
-        # Центрируем окно относительно родителя
+        # Center the window relative to the parent
         self.center_window(parent)
         
     def center_window(self, parent):
-        """Центрирует окно галереи относительно родительского окна"""
+        """Center the gallery window relative to the parent window"""
         parent.update_idletasks()
         parent_width = parent.winfo_width()
         parent_height = parent.winfo_height()
@@ -63,7 +63,7 @@ class ImageGallery(tk.Toplevel):
         
     def load_images(self, image_dir):
         images = sorted(Path(image_dir).glob("*.png"), 
-                       key=lambda x: int(x.stem))  # Сортировка по номеру
+                       key=lambda x: int(x.stem))  # Sort by number
         columns = 3
         padding = 10
         
@@ -71,24 +71,24 @@ class ImageGallery(tk.Toplevel):
             row = i // columns
             col = i % columns
             
-            # Создаем фрейм для изображения и подписи
+            # Create a frame for the image and caption
             frame = ttk.Frame(self.scrollable_frame)
             frame.grid(row=row, column=col, padx=padding, pady=padding)
             
             try:
-                # Загружаем и масштабируем изображение
+                # Load and scale the image
                 img = Image.open(img_path)
                 img.thumbnail((200, 200))
                 photo = ImageTk.PhotoImage(img)
                 
-                # Сохраняем ссылку на PhotoImage
+                # Save a reference to PhotoImage
                 frame.photo = photo
                 
-                # Отображаем изображение и подпись
+                # Display the image and caption
                 label_img = ttk.Label(frame, image=photo)
                 label_img.pack()
                 
                 label_text = ttk.Label(frame, text=img_path.name, wraplength=200)
                 label_text.pack()
             except Exception as e:
-                print(f"Ошибка при загрузке изображения {img_path}: {e}")
+                print(f"Error loading image {img_path}: {e}")

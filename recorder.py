@@ -13,31 +13,31 @@ from pynput import mouse
 class MacroGenerator:
     def __init__(self):
         self.screen_width, self.screen_height = pyautogui.size()
-        # Добавляем отступ от края экрана для безопасности
+        # Add margin from the edge of the screen for safety
         self.safe_margin = 5
         
     def _adjust_coordinates(self, x, y):
-        """Корректирует координаты, чтобы избежать срабатывания защиты PyAutoGUI"""
+        """Adjusts coordinates to avoid triggering PyAutoGUI's fail-safe"""
         safe_x = max(self.safe_margin, min(x, self.screen_width - self.safe_margin))
         safe_y = max(self.safe_margin, min(y, self.screen_height - self.safe_margin))
         if safe_x != x or safe_y != y:
-            logging.debug(f"Координаты скорректированы: ({x}, {y}) -> ({safe_x}, {safe_y})")
+            logging.debug(f"Coordinates adjusted: ({x}, {y}) -> ({safe_x}, {safe_y})")
         return safe_x, safe_y
     
     def generate_code(self, actions):
-        """Генерирует код макроса из списка действий"""
+        """Generates macro code from a list of actions"""
         code = [
             "import pyautogui",
             "import time",
             "from pathlib import Path",
             "import logging",
             "",
-            "# Установка безопасных настроек",
+            "# Set safe settings",
             "pyautogui.FAILSAFE = True",
             "pyautogui.PAUSE = 0.05",
             "",
             "def adjust_coordinates(x, y, screen_width, screen_height, margin=5):",
-            "    '''Корректирует координаты для избежания срабатывания защиты'''",
+            "    '''Adjusts coordinates to avoid triggering fail-safe'''",
             "    safe_x = max(margin, min(x, screen_width - margin))",
             "    safe_y = max(margin, min(y, screen_height - margin))",
             "    return safe_x, safe_y",
@@ -53,17 +53,17 @@ class MacroGenerator:
             "def run_script():",
             "    screens_dir = Path('screens')",
             "    if not screens_dir.exists():",
-            "        logging.error('Директория screens не найдена')",
+            "        logging.error('Directory screens not found')",
             "        return",
             "    ",
-            "    # Получаем текущие размеры экрана",
+            "    # Get current screen size",
             "    current_width, current_height = pyautogui.size()",
-            "    logging.info(f'Размер экрана: {current_width}x{current_height}')",
+            "    logging.info(f'Screen size: {current_width}x{current_height}')",
             ""
         ]
         
         if not actions:
-            code.append("    print('Нет записанных действий')")
+            code.append("    print('No recorded actions')")
             code.append("    return")
             code.append("")
             return "\n".join(code)
@@ -76,44 +76,44 @@ class MacroGenerator:
             
             if action[0] == 'move':
                 _, x, y, _ = action
-                code.append(f"    # Перемещение мыши в позицию ({x}, {y})")
+                code.append(f"    # Move mouse to position ({x}, {y})")
                 code.append(f"    safe_x, safe_y = adjust_coordinates({x}, {y}, current_width, current_height)")
                 code.append(f"    pyautogui.moveTo(safe_x, safe_y, _pause=False)")
             elif action[0] == 'mouseDown':
                 _, x, y, button, _, screenshot_num = action
                 if screenshot_num is not None:
-                    code.append(f"    # Поиск и клик по изображению {screenshot_num}.png")
+                    code.append(f"    # Find and click on image {screenshot_num}.png")
                     code.append(f"    image_path = str(screens_dir / '{screenshot_num}.png')")
                     code.append(f"    try:")
                     code.append(f"        target = pyautogui.locateOnScreen(image_path, confidence=0.9)")
                     code.append(f"        if target:")
                     code.append(f"            target_center = pyautogui.center(target)")
                     code.append(f"            safe_x, safe_y = adjust_coordinates(target_center.x, target_center.y, current_width, current_height)")
-                    code.append(f"            logging.info(f'Найдено изображение {screenshot_num}.png в позиции ({{safe_x}}, {{safe_y}})')")
+                    code.append(f"            logging.info(f'Found image {screenshot_num}.png at position ({{safe_x}}, {{safe_y}})')")
                     code.append(f"            pyautogui.click(safe_x, safe_y, button='{button}', _pause=False)")
                     code.append(f"        else:")
                     code.append(f"            raise pyautogui.ImageNotFoundException")
                     code.append(f"    except pyautogui.ImageNotFoundException:")
-                    code.append(f"        logging.warning(f'Изображение {{image_path}} не найдено, используем относительные координаты')")
+                    code.append(f"        logging.warning(f'Image {{image_path}} not found, using relative coordinates')")
                     code.append(f"        new_x, new_y = calculate_new_coordinates({x}, {y}, *ORIGINAL_SCREEN_SIZE)")
                     code.append(f"        pyautogui.click(new_x, new_y, button='{button}', _pause=False)")
                 else:
-                    code.append(f"    # Клик мышью в позиции ({x}, {y})")
+                    code.append(f"    # Mouse click at position ({x}, {y})")
                     code.append(f"    new_x, new_y = calculate_new_coordinates({x}, {y}, *ORIGINAL_SCREEN_SIZE)")
                     code.append(f"    pyautogui.click(new_x, new_y, button='{button}', _pause=False)")
             elif action[0] == 'mouseUp':
                 _, x, y, button, _ = action
-                code.append(f"    # Отпускание кнопки мыши в позиции ({x}, {y})")
+                code.append(f"    # Mouse button release at position ({x}, {y})")
                 code.append(f"    safe_x, safe_y = adjust_coordinates({x}, {y}, current_width, current_height)")
                 code.append(f"    pyautogui.mouseUp(safe_x, safe_y, button='{button}', _pause=False)")
             elif action[0] == 'scroll':
                 _, x, y, _, delta, _ = action
-                code.append(f"    # Прокрутка колеса мыши в позиции ({x}, {y})")
+                code.append(f"    # Mouse scroll at position ({x}, {y})")
                 code.append(f"    safe_x, safe_y = adjust_coordinates({x}, {y}, current_width, current_height)")
                 code.append(f"    pyautogui.scroll({delta}, x=safe_x, y=safe_y)")
             elif action[0] == 'keydown':
                 _, key, _ = action
-                code.append(f"    # Нажатие клавиши {key}")
+                code.append(f"    # Key press {key}")
                 if len(key) == 1:
                     code.append(f"    pyautogui.press('{key}', _pause=False)")
                 else:
@@ -121,28 +121,28 @@ class MacroGenerator:
             elif action[0] == 'keyup':
                 _, key, _ = action
                 if len(key) > 1:
-                    code.append(f"    # Отпускание клавиши {key}")
+                    code.append(f"    # Key release {key}")
                     code.append(f"    pyautogui.keyUp('{key}', _pause=False)")
             elif action[0] == 'doubleClick':
                 _, x, y, timestamp, screenshot_num = action
                 if screenshot_num is not None:
-                    code.append(f"    # Двойной клик по изображению {screenshot_num}.png")
+                    code.append(f"    # Double click on image {screenshot_num}.png")
                     code.append(f"    image_path = str(screens_dir / '{screenshot_num}.png')")
                     code.append(f"    try:")
                     code.append(f"        target = pyautogui.locateOnScreen(image_path, confidence=0.9)")
                     code.append(f"        if target:")
                     code.append(f"            target_center = pyautogui.center(target)")
                     code.append(f"            safe_x, safe_y = adjust_coordinates(target_center.x, target_center.y, current_width, current_height)")
-                    code.append(f"            logging.info(f'Найдено изображение {screenshot_num}.png в позиции ({{safe_x}}, {{safe_y}})')")
+                    code.append(f"            logging.info(f'Found image {screenshot_num}.png at position ({{safe_x}}, {{safe_y}})')")
                     code.append(f"            pyautogui.doubleClick(safe_x, safe_y, _pause=False)")
                     code.append(f"        else:")
                     code.append(f"            raise pyautogui.ImageNotFoundException")
                     code.append(f"    except pyautogui.ImageNotFoundException:")
-                    code.append(f"        logging.warning(f'Изображение {{image_path}} не найдено, используем относительные координаты')")
+                    code.append(f"        logging.warning(f'Image {{image_path}} not found, using relative coordinates')")
                     code.append(f"        new_x, new_y = calculate_new_coordinates({x}, {y}, *ORIGINAL_SCREEN_SIZE)")
                     code.append(f"        pyautogui.doubleClick(new_x, new_y, _pause=False)")
                 else:
-                    code.append(f"    # Двойной клик в позиции ({x}, {y})")
+                    code.append(f"    # Double click at position ({x}, {y})")
                     code.append(f"    new_x, new_y = calculate_new_coordinates({x}, {y}, *ORIGINAL_SCREEN_SIZE)")
                     code.append(f"    pyautogui.doubleClick(new_x, new_y, _pause=False)")
             
@@ -157,17 +157,18 @@ class MacroGenerator:
 class Recorder:
     def __init__(self):
         self.actions = []
+        self.preserved_actions = None  # Add new variable to preserve actions
         self.start_time = None
         self.running = False
         self.last_mouse_position = (0, 0)
-        self.position_check_interval = 0.05
+        self.position_check_interval = 0.016  # Changed to ~60fps (1/60 second)
         self.is_dragging = False
         self.screenshot_counter = 0
         self.screens_dir = Path("screens")
         self.clear_screens_directory()
         self.macro_generator = MacroGenerator()
         
-        # Добавляем словарь замены клавиш
+        # Add key replacement dictionary
         self.key_replacements = {
             'left windows': 'winleft',
             'right windows': 'winright',
@@ -188,37 +189,59 @@ class Recorder:
             'print screen': 'printscreen',
         }
         
-        # Параметры для отслеживания двойного клика
-        self.last_down_sequence = []  # последовательность нажатий
-        self.last_up_sequence = []    # последовательность отпусаний
-        self.double_click_threshold = 0.2  # время между кликами в секундах
+        # Parameters for double-click detection
+        self.last_down_sequence = []  # sequence of down events
+        self.last_up_sequence = []    # sequence of up events
+        self.double_click_threshold = 0.2  # time between clicks in seconds
         
-        # Параметры для фильтрации повторяющихся событий
+        # Parameters for filtering repeated events
         self.last_event_type = None
         self.last_action_time = 0
-        self.min_event_interval = 0.05
+        self.min_event_interval = 0.016  # Match the check interval
+        self.mouse_move_threshold = 2  # Minimum pixel distance for move events
+        self.last_recorded_pos = (0, 0)
         
-        # Настройка логирования
+        # Logging setup
         logging.basicConfig(
             level=logging.DEBUG,
             format='%(asctime)s - %(levelname)s - %(message)s'
         )
         self.mouse_listener = None
         self.keyboard_listener = None
+        self.cleanup_logging()
+        self._last_generated_code = None  # Add this line
+        self.is_recording = False
+        self.current_actions = []  # Temporary storage for current recording
+        self.base_actions = []  # Store all previous recordings
+        self.last_timestamp = 0  # Add this line
+    
+    def cleanup_logging(self):
+        """Clean up logging handlers and reinitialize"""
+        # Remove all handlers
+        logger = logging.getLogger()
+        for handler in logger.handlers[:]:
+            logger.removeHandler(handler)
+            
+        # Reinitialize logging
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format='%(asctime)s - %(levelname)s - %(message)s',
+            force=True
+        )
     
     def clear_screens_directory(self):
-        """Очищает директорию скриншотов"""
+        """Clears the screenshots directory"""
         if self.screens_dir.exists():
             shutil.rmtree(self.screens_dir)
         self.screens_dir.mkdir(exist_ok=True)
         
     def take_screenshot_around_click(self, x, y):
-        # Определяем область вокруг клика (например, 100x100 пикселей)
+        # Define the area around the click (e.g., 100x100 pixels)
         region_size = 100
         left = max(x - region_size//2, 0)
         top = max(y - region_size//2, 0)
         
-        # Делаем скриншот области
+        # Take a screenshot of the area
         self.screenshot_counter += 1
         screenshot_path = self.screens_dir / f"{self.screenshot_counter}.png"
         
@@ -227,38 +250,38 @@ class Recorder:
             screenshot.save(screenshot_path)
             return self.screenshot_counter
         except Exception as e:
-            print(f"Ошибка при создании скриншота: {e}")
+            print(f"Error taking screenshot: {e}")
             return None
     
     def is_double_click(self, x, y, timestamp, event_type='down'):
-        """Проверяет, является ли текущий клик частью двойного клика"""
-        # Выбираем нужную последовательность в зависимости от типа события
+        """Checks if the current click is part of a double click"""
+        # Select the appropriate sequence based on the event type
         sequence = self.last_down_sequence if event_type == 'down' else self.last_up_sequence
         
-        # Добавляем текущее время в последовательность
+        # Add the current time to the sequence
         sequence.append(timestamp)
         
-        # Оставляем только последние два события
+        # Keep only the last two events
         if len(sequence) > 2:
             sequence.pop(0)
         
-        # Если это первое событие в последовательности
+        # If this is the first event in the sequence
         if len(sequence) < 2:
             logging.debug(f"First {event_type} in sequence at ({x}, {y})")
             return False
         
-        # Вычисляем время между событиями
+        # Calculate the time between events
         time_diff = sequence[1] - sequence[0]
         
         logging.debug(f"Time between {event_type}s: {time_diff:.3f}s (threshold: {self.double_click_threshold}s)")
         
-        # Проверяем время между событиями
+        # Check the time between events
         is_double = time_diff <= self.double_click_threshold
         
         if is_double:
             logging.info(f"Double click detected by {event_type} events!")
-            sequence.clear()  # Очищаем последовательность
-            # Очищаем также вторую последовательность
+            sequence.clear()  # Clear the sequence
+            # Also clear the other sequence
             if event_type == 'down':
                 self.last_up_sequence.clear()
             else:
@@ -267,69 +290,117 @@ class Recorder:
         return is_double
     
     def start(self):
-        # Сбрасываем список действий перед новой записью
-        self.actions = []
-        self.screenshot_counter = 0
+        """Starts recording a new macro"""
+        if self.running:
+            self.stop()
         
-        # Очищаем обработчики логирования
-        logger = logging.getLogger()
-        for handler in logger.handlers[:]:
-            logger.removeHandler(handler)
+        # Store previous actions if any exist
+        if self.actions:
+            self.base_actions = self.actions.copy()
+            
+        # Reset state for new recording
+        self.current_actions = []
+        self.running = True
+        self.is_recording = True
+        self.last_timestamp = time.time()  # Update timestamp
+        self.start_time = self.last_timestamp
         
-        # Настраиваем логирование заново
-        logging.basicConfig(
-            level=logging.DEBUG,
-            format='%(asctime)s - %(levelname)s - %(message)s',
-            force=True  # Принудительно пересоздаем конфигурацию
-        )
-        
-        # Очищаем последовательности кликов
-        self.last_down_sequence.clear()
-        self.last_up_sequence.clear()
-        
-        # Запускаем прослушивание
+        # Start listeners
         self.start_listening()
-    
+        logging.info(f"Started new recording session (existing actions: {len(self.base_actions)})")
+
     def stop(self):
+        """Stops recording and generates macro code"""
+        if not self.running:
+            return self._last_generated_code or self.macro_generator.generate_code(self.actions)
+            
         self.running = False
+        self.is_recording = False
+        
+        # Stop listeners
         keyboard.unhook_all()
         if self.mouse_listener:
             self.mouse_listener.stop()
-        if self.keyboard_listener:
-            self.keyboard_listener.stop()
-        
-        # Ждем завершения потока отслеживания мыши
+            
+        # Wait for mouse thread
         if hasattr(self, 'mouse_thread') and self.mouse_thread.is_alive():
             self.mouse_thread.join(timeout=1.0)
+        
+        # Combine base actions with current recording
+        if self.current_actions:  # Only combine if there are new actions
+            self.actions = self.base_actions + self.current_actions
+            logging.info(f"Combined {len(self.base_actions)} previous actions with {len(self.current_actions)} new actions")
             
-        return self.macro_generator.generate_code(self.actions)
-    
+            # Generate code
+            self._last_generated_code = self.macro_generator.generate_code(self.actions)
+            return self._last_generated_code
+        elif self.base_actions:  # Return existing code if no new actions
+            self._last_generated_code = self.macro_generator.generate_code(self.base_actions)
+            return self._last_generated_code
+        else:
+            logging.warning("No actions recorded")
+            return ""
+
+    def generate_code(self):
+        """Optimize generated code for smoother playback"""
+        if not self.actions:
+            return None
+            
+        # Optimize mouse movements by reducing redundant points
+        optimized_actions = []
+        last_move = None
+        
+        for action in self.actions:
+            if action[0] == 'move':
+                if not last_move or (time.time() - last_move[-1]) > 0.05:
+                    optimized_actions.append(action)
+                    last_move = action
+            else:
+                optimized_actions.append(action)
+        
+        self._last_generated_code = self.macro_generator.generate_code(optimized_actions)
+        return self._last_generated_code
+
     def track_mouse_movement(self):
+        """Track mouse movements with optimized sampling"""
         while self.running:
-            if not self.is_dragging:
-                current_pos = pyautogui.position()
-                if current_pos != self.last_mouse_position:
-                    self.actions.append(('move', current_pos[0], current_pos[1], 
-                                       time.time() - self.start_time))
-                    self.last_mouse_position = current_pos
+            if self.is_recording and not self.is_dragging:
+                try:
+                    current_pos = pyautogui.position()
+                    x_diff = abs(current_pos[0] - self.last_recorded_pos[0])
+                    y_diff = abs(current_pos[1] - self.last_recorded_pos[1])
+                    
+                    # Only record if mouse moved beyond threshold
+                    if x_diff > self.mouse_move_threshold or y_diff > self.mouse_move_threshold:
+                        timestamp = time.time() - self.start_time
+                        self.current_actions.append(('move', current_pos[0], current_pos[1], timestamp))
+                        self.last_recorded_pos = current_pos
+                        self.last_mouse_position = current_pos
+                except Exception as e:
+                    logging.error(f"Error tracking mouse: {e}")
             time.sleep(self.position_check_interval)
     
     def on_keyboard_event(self, event):
-        if not self.running:
+        if not self.is_recording:
             return
         
-        # Нормализуем название клавиши
-        normalized_key = self._normalize_key(event.name)
-        
-        if event.event_type == 'down':
-            self.actions.append(('keydown', normalized_key, 
-                               time.time() - self.start_time))
-        elif event.event_type == 'up':
-            self.actions.append(('keyup', normalized_key, 
-                               time.time() - self.start_time))
-    
+        try:
+            # Normalize the key name
+            normalized_key = self._normalize_key(event.name)
+            timestamp = time.time() - self.start_time
+            
+            if event.event_type == 'down':
+                self.current_actions.append(('keydown', normalized_key, timestamp))
+                logging.debug(f"Recorded keydown: {normalized_key}")
+            elif event.event_type == 'up':
+                self.current_actions.append(('keyup', normalized_key, timestamp))
+                logging.debug(f"Recorded keyup: {normalized_key}")
+                
+        except Exception as e:
+            logging.error(f"Error processing keyboard event: {e}")
+
     def filter_repeated_event(self, timestamp, event_type, x, y):
-        """Фильтрует слишком частые повторяющиеся события"""
+        """Filters out too frequent repeated events"""
         current_event = (event_type, x, y)
         time_diff = timestamp - self.last_action_time
         
@@ -342,86 +413,61 @@ class Recorder:
         return False
     
     def on_mouse_event(self, x, y, button=None, pressed=None, delta=0):
-        if not self.running:
+        """Optimized mouse event handler"""
+        if not self.is_recording:
             return
-        
-        timestamp = time.time() - self.start_time
-        event_type = 'ButtonEvent' if pressed else 'ButtonReleaseEvent'
-        
-        # Фильтруем частые повторяющиеся события
-        if self.filter_repeated_event(timestamp, event_type, x, y):
-            return
-        
-        if event_type == 'ButtonEvent':
-            if button == mouse.Button.left:
-                if pressed:
-                    logging.debug(f"Left mouse button down at ({x}, {y})")
-                    try:
-                        if self.is_double_click(x, y, timestamp, 'down'):
-                            # Удаляем предыдущие события одиночного клика
-                            while self.actions and self.actions[-1][0] in ('mouseUp', 'mouseDown'):
-                                removed_action = self.actions.pop()
-                                logging.debug(f"Removing action: {removed_action}")
-                            
-                            # Добавляем событие двойного клика
-                            screenshot_num = self.take_screenshot_around_click(x, y)
-                            self.actions.append(('doubleClick', x, y, timestamp, screenshot_num))
-                            logging.info(f"Added double click action at ({x}, {y})")
-                        else:
-                            # Обычный клик
-                            screenshot_num = self.take_screenshot_around_click(x, y)
-                            self.actions.append(('mouseDown', x, y, button.name, timestamp, screenshot_num))
-                    except Exception as e:
-                        logging.error(f"Error processing mouse event: {e}")
-                
-                    self.is_dragging = True
-                    self.last_mouse_position = (x, y)
-                else:
-                    logging.debug(f"Left mouse button up at ({x}, {y})")
-                    try:
-                        if self.is_double_click(x, y, timestamp, 'up'):
-                            # Удаляем предыдущие события одиночного клика
-                            while self.actions and self.actions[-1][0] in ('mouseUp', 'mouseDown'):
-                                removed_action = self.actions.pop()
-                                logging.debug(f"Removing action: {removed_action}")
-                            
-                            # Добавляем событие двойного клика
-                            screenshot_num = self.take_screenshot_around_click(x, y)
-                            self.actions.append(('doubleClick', x, y, timestamp, screenshot_num))
-                            logging.info(f"Added double click action at ({x}, {y})")
-                        else:
-                            if self.is_dragging:
-                                self.actions.append(('move', x, y, timestamp))
-                            self.actions.append(('mouseUp', x, y, button.name, timestamp))
-                    except Exception as e:
-                        logging.error(f"Error processing mouse event: {e}")
-                
-                    self.is_dragging = False
-            else:  # другие кнопки мыши
-                if pressed:
-                    self.actions.append(('mouseDown', x, y, button.name, timestamp, None))
-                else:
-                    self.actions.append(('mouseUp', x, y, button.name, timestamp))
-                
-        elif event_type == 'WheelEvent':
-            self.actions.append(('scroll', x, y, 0, delta, timestamp))
             
-        elif event_type == 'MoveEvent' and self.is_dragging:
-            if (x, y) != self.last_mouse_position:
-                self.actions.append(('move', x, y, timestamp))
-                self.last_mouse_position = (x, y)
-    
+        try:
+            current_time = time.time()
+            timestamp = current_time - self.start_time
+            
+            # Filter high-frequency events
+            if (current_time - self.last_timestamp) < self.min_event_interval:
+                return
+                
+            if pressed is not None:  # Click event
+                if button == mouse.Button.left:
+                    if pressed:
+                        screenshot_num = self.take_screenshot_around_click(x, y)
+                        self.current_actions.append(('mouseDown', x, y, button.name, timestamp, screenshot_num))
+                        self.last_recorded_pos = (x, y)
+                    else:
+                        self.current_actions.append(('mouseUp', x, y, button.name, timestamp))
+                else:  # Other mouse buttons
+                    if pressed:
+                        self.current_actions.append(('mouseDown', x, y, button.name, timestamp, None))
+                    else:
+                        self.current_actions.append(('mouseUp', x, y, button.name, timestamp))
+                self.last_timestamp = current_time
+                        
+            elif delta:  # Scroll event
+                # Consolidate scroll events
+                if self.current_actions and self.current_actions[-1][0] == 'scroll':
+                    if timestamp - self.current_actions[-1][-1] < 0.1:  # Combine scrolls within 100ms
+                        self.current_actions[-1] = ('scroll', x, y, 0, self.current_actions[-1][4] + delta, timestamp)
+                        return
+                self.current_actions.append(('scroll', x, y, 0, delta, timestamp))
+                self.last_timestamp = current_time
+                
+        except Exception as e:
+            logging.error(f"Error processing mouse event: {e}")
+
     def start_listening(self):
-        """Начинает прослушивание событий клавиатуры и мыши"""
-        self.running = True
-        self.start_time = time.time()
+        """Starts listening to keyboard and mouse events"""
+        # Stop existing listeners if any
+        if self.mouse_listener:
+            self.mouse_listener.stop()
+        if hasattr(self, 'mouse_thread') and self.mouse_thread.is_alive():
+            self.mouse_thread.join(timeout=1.0)
+            
+        keyboard.unhook_all()
         
-        # Запускаем отслеживание движений мыши в отдельном потоке
+        # Start tracking mouse movements in a separate thread
         self.mouse_thread = threading.Thread(target=self.track_mouse_movement)
         self.mouse_thread.daemon = True
         self.mouse_thread.start()
         
-        # Устанавливаем обработчики событий
+        # Set up event handlers
         keyboard.hook(self.on_keyboard_event)
         self.mouse_listener = mouse.Listener(
             on_move=self.on_mouse_event,
@@ -431,5 +477,15 @@ class Recorder:
         self.mouse_listener.start()
 
     def _normalize_key(self, key):
-        """Преобразует название клавиши в орректный формат для PyAutoGUI"""
+        """Normalizes the key name to the correct format for PyAutoGUI"""
         return self.key_replacements.get(key.lower(), key)
+
+    def clear_recording(self):
+        """Clear all recorded actions"""
+        self.actions = []
+        self.base_actions = []
+        self.current_actions = []
+        self.screenshot_counter = 0
+        self._last_generated_code = None
+        self.clear_screens_directory()
+        logging.info("Cleared all recorded actions")

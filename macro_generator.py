@@ -1,16 +1,18 @@
+import pyautogui
+
 class MacroGenerator:
     def __init__(self):
         self.screen_width, self.screen_height = pyautogui.size()
         
     def generate_code(self, actions):
-        """Генерирует код макроса из списка действий"""
+        """Generates macro code from a list of actions"""
         code = [
             "import pyautogui",
             "import time",
             "from pathlib import Path",
             "import logging",
             "",
-            "# Установка безопасных настроек",
+            "# Setting safe parameters",
             "pyautogui.FAILSAFE = True",
             "pyautogui.PAUSE = 0.05",
             "",
@@ -25,13 +27,13 @@ class MacroGenerator:
             "def run_script():",
             "    screens_dir = Path('screens')",
             "    if not screens_dir.exists():",
-            "        logging.error('Директория screens не найдена')",
+            "        logging.error('Directory screens not found')",
             "        return",
             ""
         ]
         
         if not actions:
-            code.append("    print('Нет записанных действий')")
+            code.append("    print('No recorded actions')")
             code.append("    return")
             code.append("")
             return "\n".join(code)
@@ -48,7 +50,7 @@ class MacroGenerator:
             elif action[0] == 'mouseDown':
                 _, x, y, button, _, screenshot_num = action
                 if screenshot_num is not None:
-                    code.append(f"    # Поиск и клик по изображению {screenshot_num}.png")
+                    code.append(f"    # Search and click on image {screenshot_num}.png")
                     code.append(f"    image_path = str(screens_dir / '{screenshot_num}.png')")
                     code.append(f"    try:")
                     code.append(f"        target = pyautogui.locateOnScreen(image_path, confidence=0.9)")
@@ -58,7 +60,7 @@ class MacroGenerator:
                     code.append(f"        else:")
                     code.append(f"            raise pyautogui.ImageNotFoundException")
                     code.append(f"    except pyautogui.ImageNotFoundException:")
-                    code.append(f"        logging.warning(f'Изображение {{image_path}} не найдено, используем относительные координаты')")
+                    code.append(f"        logging.warning(f'Image {{image_path}} not found, using relative coordinates')")
                     code.append(f"        new_x, new_y = calculate_new_coordinates({x}, {y}, *ORIGINAL_SCREEN_SIZE)")
                     code.append(f"        pyautogui.mouseDown(new_x, new_y, button='{button}', _pause=False)")
                 else:
@@ -87,4 +89,4 @@ class MacroGenerator:
         code.append("if __name__ == '__main__':")
         code.append("    run_script()")
         
-        return "\n".join(code) 
+        return "\n".join(code)
