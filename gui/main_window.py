@@ -56,6 +56,9 @@ class CodeEditor(QtWidgets.QPlainTextEdit):
     def lineNumberAreaPaintEvent(self, event):
         painter = QtGui.QPainter(self.line_number_area)
         painter.fillRect(event.rect(), QtGui.QColor("#1e1e1e"))
+        
+        # Set same font as editor
+        painter.setFont(self.font())
 
         block = self.firstVisibleBlock()
         block_number = block.blockNumber()
