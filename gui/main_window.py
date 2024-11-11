@@ -7,9 +7,14 @@ import time
 import sys
 
 import pyautogui
-from .settings_dialog import SettingsDialog
-from .syntax_highlighter import PythonHighlighter
-from .code_editor import CodeEditor
+try:
+    from .settings_dialog import SettingsDialog
+    from .syntax_highlighter import PythonHighlighter
+    from .code_editor import CodeEditor
+except ImportError:
+    from settings_dialog import SettingsDialog
+    from syntax_highlighter import PythonHighlighter
+    from code_editor import CodeEditor
 
 class MainWindow(QtWidgets.QMainWindow):
     # Define signals with new syntax
