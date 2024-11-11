@@ -9,7 +9,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG,
                    format='%(asctime)s - %(levelname)s - %(message)s',
                    handlers=[
-                       logging.FileHandler('player_debug.log', encoding='utf-8'),
+                       logging.FileHandler('logs/player_debug.log', encoding='utf-8'),
                        logging.StreamHandler(sys.stdout)
                    ])
 

@@ -75,8 +75,8 @@ class Recorder:
             self.base_actions = self.actions.copy()
             
         # Start listeners
-        self.keyboard_recorder.start(self.start_time)
         self.mouse_recorder.start(self.start_time)
+        # self.keyboard_recorder.start(self.start_time)
         logging.info(f"Started new recording session at {self.start_time:.3f} (existing actions: {len(self.base_actions)})")
 
     def stop(self):
