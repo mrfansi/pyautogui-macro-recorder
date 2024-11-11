@@ -15,7 +15,7 @@ def main():
     window = MainWindow(recorder, player, settings)
     window.show()
     
-    return app.exec()  # Changed from exec_() to exec()
+    return app.exec()
 
 if __name__ == "__main__":
     main()
