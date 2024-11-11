@@ -25,6 +25,7 @@ class MouseRecorder:
         self.double_click_threshold = 0.2
         
         self.recorder = recorder  # Store reference to main recorder
+        logging.info("MouseRecorder initialized")
         
     def start(self, start_time):
         self.start_time = start_time
@@ -38,12 +39,14 @@ class MouseRecorder:
             on_scroll=self.on_mouse_event
         )
         self.mouse_listener.start()
+        logging.debug(f"Mouse recording started at {start_time}")
 
     def stop(self):
         self.is_recording = False
         if self.mouse_listener:
             self.mouse_listener.stop()
         self.start_time = None
+        logging.info("Mouse recording stopped")
 
     def take_screenshot_around_click(self, x, y):
         """Take screenshot around click position with proper coordinate handling"""
@@ -71,10 +74,11 @@ class MouseRecorder:
             
             screenshot = pyautogui.screenshot(region=(left, top, region_size, region_size))
             screenshot.save(screenshot_path)
+            logging.debug(f"Screenshot saved: {screenshot_path}")
             return self.screenshot_counter
             
         except Exception as e:
-            logging.error(f"Error taking screenshot at ({x}, {y}): {e}", exc_info=True)
+            logging.exception(f"Error taking screenshot at ({x}, {y}): {e}")
             return None
 
     def on_mouse_event(self, x, y, button=None, pressed=None, delta=0):
@@ -82,6 +86,7 @@ class MouseRecorder:
             return
             
         try:
+            logging.debug(f"Mouse event detected: x={x}, y={y}, button={button}, pressed={pressed}, delta={delta}")
             current_time = time.time()
             timestamp = current_time - self.start_time
             
@@ -145,11 +150,12 @@ class MouseRecorder:
                 self.last_timestamp = current_time
                 
             if event_data:
+                logging.debug(f"Prepared event data: {event_data}")
                 self.recorder.handle_mouse_event(event_data)
                 self.last_timestamp = current_time
                 
         except Exception as e:
-            logging.error(f"Error processing mouse event: {e}")
+            logging.exception(f"Error processing mouse event: {e}")
             return None
 
 # Add test functionality

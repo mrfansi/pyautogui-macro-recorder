@@ -24,6 +24,7 @@ class ActionPlayer:
         self.logs_dir.mkdir(exist_ok=True)
         
         self.cleanup_logging()  # Initialize clean logging state
+        logging.info("ActionPlayer initialized")
     
     def cleanup_logging(self):
         """Clean up logging handlers and reinitialize"""
@@ -68,6 +69,8 @@ class ActionPlayer:
     def play(self, code):
         self.cleanup_logging()
         self.running = True
+        logging.info("Beginning playback")
+        logging.debug(f"Code to execute:\n{code}")
         try:
             # Validate code input
             if not isinstance(code, str):
@@ -95,23 +98,26 @@ class ActionPlayer:
                     logging.error("run_script() function not found in the code")
                     return
                     
+                logging.info("Executing run_script()")
                 logging.info("Executing recorded macro")
                 namespace['run_script']()
                 
             except SyntaxError as se:
-                logging.error(f"Syntax error in macro code: {se}")
+                logging.error(f"Syntax error: {se}")
                 return
             except Exception as e:
-                logging.error(f"Error executing macro: {e}")
+                logging.exception(f"Exception during macro execution: {e}")
                 traceback.print_exc()
                 return
                 
         finally:
             self.running = False
+            logging.info("Playback finished")
             self.cleanup_logging()
             
     def stop(self):
         self.running = False
+        logging.info("Stopping playback")
         self.cleanup_logging()  # Clean up when stopping
 
 if __name__ == '__main__':

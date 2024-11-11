@@ -37,6 +37,7 @@ class Recorder:
         self.current_actions = []  # Temporary storage for current recording
         self.base_actions = []  # Store all previous recordings
         self.last_timestamp = 0  # Add this line
+        logging.info("Recorder initialized")  # Add this line
     
     def cleanup_logging(self):
         """Clean up logging handlers and reinitialize"""
@@ -69,6 +70,7 @@ class Recorder:
         self.is_recording = True
         self.start_time = time.time()  # Set start_time first
         self.last_timestamp = self.start_time
+        logging.debug(f"Starting new recording. Running: {self.running}, Start time: {self.start_time}")
         
         # Store previous actions if any exist
         if self.actions:
@@ -87,6 +89,7 @@ class Recorder:
         logging.info("Stopping recording...")
         self.running = False
         self.is_recording = False
+        logging.debug("Stopping recording")
         
         # Stop listeners first
         self.keyboard_recorder.stop()
@@ -100,15 +103,18 @@ class Recorder:
         if self.current_actions:  # Only combine if there are new actions
             self.actions = self.base_actions + self.current_actions
             logging.info(f"Combined {len(self.base_actions)} previous actions with {len(self.current_actions)} new actions")
+            logging.debug(f"Generating code from {len(self.actions)} actions")
             
             # Generate code
             self._last_generated_code = self.macro_generator.generate_code(self.actions)
             return self._last_generated_code
         elif self.base_actions:  # Return existing code if no new actions
+            logging.debug(f"No new actions. Generating code from base actions ({len(self.base_actions)} actions)")
             self._last_generated_code = self.macro_generator.generate_code(self.base_actions)
             return self._last_generated_code
         else:
             logging.warning("No actions recorded")
+            logging.warning("No actions to generate code from")
             return ""
 
     def generate_code(self):
@@ -119,6 +125,7 @@ class Recorder:
         # Optimize mouse movements by reducing redundant points
         optimized_actions = []
         last_move = None
+        logging.debug("Optimizing actions for code generation")
         
         for action in self.actions:
             if action[0] == 'move':
@@ -128,6 +135,7 @@ class Recorder:
             else:
                 optimized_actions.append(action)
         
+        logging.debug(f"Optimized actions count: {len(optimized_actions)}")
         self._last_generated_code = self.macro_generator.generate_code(optimized_actions)
         return self._last_generated_code
 
@@ -140,6 +148,7 @@ class Recorder:
         self._last_generated_code = None
         self.clear_screens_directory()
         logging.info("Cleared all recorded actions")
+        logging.info("All recorded actions cleared")
 
     def handle_keyboard_event(self, event_data):
         """Handle keyboard events from KeyboardRecorder"""
@@ -148,6 +157,7 @@ class Recorder:
             key = event_data['key']
             timestamp = event_data['timestamp']
             self.current_actions.append((event_type, key, timestamp))
+            logging.debug(f"Keyboard event received: {event_data}")
 
     def handle_mouse_event(self, event_data):
         """Handle mouse events from MouseRecorder"""
@@ -178,6 +188,7 @@ class Recorder:
                     event_data['delta'],
                     event_data['timestamp']
                 ))
+            logging.debug(f"Mouse event received: {event_data}")
 
 def test_recorder():
     """Simple test function to demonstrate recorder functionality"""

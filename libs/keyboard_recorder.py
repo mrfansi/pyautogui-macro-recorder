@@ -54,6 +54,7 @@ class KeyboardRecorder:
         self.is_recording = False
         self.recorder = recorder
         self.listener = None
+        logging.info("KeyboardRecorder initialized")
 
     def start(self, start_time):
         self.start_time = start_time
@@ -63,15 +64,18 @@ class KeyboardRecorder:
             on_release=lambda key: self.on_keyboard_event(key, False)
         )
         self.listener.start()
+        logging.debug(f"Keyboard recording started at {start_time}")
 
     def stop(self):
         self.is_recording = False
         if self.listener:
             self.listener.stop()
         self.start_time = None
+        logging.info("Keyboard recording stopped")
 
     def on_keyboard_event(self, key, is_press):
         """Handle keyboard events with pynput compatibility"""
+        logging.debug(f"Keyboard event: key={key}, is_press={is_press}")
         if not self.is_recording:
             return
             
@@ -86,6 +90,7 @@ class KeyboardRecorder:
                 return
                 
             normalized_key = self._normalize_key(key)
+            logging.debug(f"Normalized key: {normalized_key}")
             if not normalized_key:
                 return
                 
@@ -96,11 +101,12 @@ class KeyboardRecorder:
                 'key': normalized_key,
                 'timestamp': timestamp
             }
+            logging.debug(f"Event data: {event_data}")
             
             self.recorder.handle_keyboard_event(event_data)
                 
         except Exception as e:
-            logging.error(f"Error processing keyboard event: {e}", exc_info=True)
+            logging.exception(f"Error processing keyboard event: {e}")
 
     def _normalize_key(self, key):
         """Normalizes the key name to the correct format for PyAutoGUI with platform support"""

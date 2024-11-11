@@ -6,6 +6,7 @@ class MacroGenerator:
         self.screen_width, self.screen_height = pyautogui.size()
         # Add margin from the edge of the screen for safety
         self.safe_margin = 5
+        logging.info("MacroGenerator initialized")
         
     def _adjust_coordinates(self, x, y):
         """Adjusts coordinates to avoid triggering PyAutoGUI's fail-safe"""
@@ -17,6 +18,7 @@ class MacroGenerator:
     
     def generate_code(self, actions):
         """Generates macro code from a list of actions"""
+        logging.debug(f"Generating code for {len(actions)} actions")
         code = [
             "import pyautogui",
             "import time",
@@ -61,6 +63,7 @@ class MacroGenerator:
         
         last_time = 0
         for action in actions:
+            logging.debug(f"Processing action: {action}")
             delay = action[-1] - last_time
             if delay > 0.05:
                 code.append(f"    time.sleep({delay:.2f})")
@@ -143,6 +146,7 @@ class MacroGenerator:
         code.append("if __name__ == '__main__':")
         code.append("    run_script()")
         
+        logging.info("Code generation completed")
         return "\n".join(code)
 
 if __name__ == '__main__':
