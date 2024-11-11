@@ -113,3 +113,16 @@ class ActionPlayer:
     def stop(self):
         self.running = False
         self.cleanup_logging()  # Clean up when stopping
+
+if __name__ == '__main__':
+    # Test code for ActionPlayer
+    player = ActionPlayer()
+    test_code = """
+def run_script():
+    print("Test macro running...")
+    time.sleep(1)
+    print("Moving mouse to (100, 100)")
+    pyautogui.moveTo(100, 100)
+    """
+    print("Starting test playback...")
+    player.play(test_code)

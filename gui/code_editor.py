@@ -157,3 +157,31 @@ class CodeEditor(QtWidgets.QPlainTextEdit):
                 background-color: #3d3d3d;
             }
         """)
+
+if __name__ == '__main__':
+    import sys
+    
+    app = QtWidgets.QApplication(sys.argv)
+    
+    # Create main window
+    window = QtWidgets.QMainWindow()
+    window.setWindowTitle("Code Editor Test")
+    window.setGeometry(100, 100, 800, 600)
+    
+    # Create and set up editor
+    editor = CodeEditor()
+    window.setCentralWidget(editor)
+    
+    # Add some sample text
+    sample_code = """def hello_world():
+    print("Hello, World!")
+    
+# This is a test
+for i in range(10):
+    hello_world()
+"""
+    editor.setPlainText(sample_code)
+    
+    # Show window
+    window.show()
+    sys.exit(app.exec())

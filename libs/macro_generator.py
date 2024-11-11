@@ -144,3 +144,17 @@ class MacroGenerator:
         code.append("    run_script()")
         
         return "\n".join(code)
+
+if __name__ == '__main__':
+    # Test code for MacroGenerator
+    generator = MacroGenerator()
+    test_actions = [
+        ('move', 100, 100, 0.5),
+        ('mouseDown', 100, 100, 'left', 0.6, None),
+        ('mouseUp', 100, 100, 'left', 0.7),
+        ('keydown', 'a', 0.8),
+        ('keyup', 'a', 0.9)
+    ]
+    
+    print("Generated code:")
+    print(generator.generate_code(test_actions))
