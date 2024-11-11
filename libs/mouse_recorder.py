@@ -1,5 +1,4 @@
 import time
-import threading
 import pyautogui
 import logging
 from pynput import mouse
@@ -19,7 +18,6 @@ class MouseRecorder:
         self.position_check_interval = 0.016
         self.min_event_interval = 0.016
         self.mouse_listener = None
-        self.mouse_thread = None
         
         # Parameters for double-click detection
         self.last_down_sequence = []
@@ -33,11 +31,6 @@ class MouseRecorder:
         self.is_recording = True
         self.last_timestamp = start_time
         
-        # Start mouse tracking thread
-        self.mouse_thread = threading.Thread(target=self.track_mouse_movement)
-        self.mouse_thread.daemon = True
-        self.mouse_thread.start()
-        
         # Start mouse listener
         self.mouse_listener = mouse.Listener(
             on_move=self.on_mouse_event,
@@ -50,32 +43,7 @@ class MouseRecorder:
         self.is_recording = False
         if self.mouse_listener:
             self.mouse_listener.stop()
-        if self.mouse_thread and self.mouse_thread.is_alive():
-            self.mouse_thread.join(timeout=1.0)
         self.start_time = None
-
-    def track_mouse_movement(self):
-        while self.is_recording:
-            if not self.is_dragging:
-                try:
-                    current_pos = pyautogui.position()
-                    x_diff = abs(current_pos[0] - self.last_recorded_pos[0])
-                    y_diff = abs(current_pos[1] - self.last_recorded_pos[1])
-                    
-                    if x_diff > self.mouse_move_threshold or y_diff > self.mouse_move_threshold:
-                        timestamp = time.time() - self.start_time
-                        event_data = {
-                            'type': 'move',
-                            'x': current_pos[0],
-                            'y': current_pos[1],
-                            'timestamp': timestamp
-                        }
-                        self.last_recorded_pos = current_pos
-                        self.last_mouse_position = current_pos
-                        self.recorder.handle_mouse_event(event_data)  # Send to main recorder
-                except Exception as e:
-                    logging.error(f"Error tracking mouse: {e}")
-            time.sleep(self.position_check_interval)
 
     def take_screenshot_around_click(self, x, y):
         """Take screenshot around click position with proper coordinate handling"""
@@ -122,7 +90,23 @@ class MouseRecorder:
                 
             event_data = None
             
-            if pressed is not None:  # Click event
+            # Handle mouse movement
+            if button is None and delta == 0:  # Move event
+                x_diff = abs(x - self.last_recorded_pos[0])
+                y_diff = abs(y - self.last_recorded_pos[1])
+                
+                if x_diff > self.mouse_move_threshold or y_diff > self.mouse_move_threshold:
+                    event_data = {
+                        'type': 'move',
+                        'x': x,
+                        'y': y,
+                        'timestamp': timestamp
+                    }
+                    self.last_recorded_pos = (x, y)
+                    self.last_mouse_position = (x, y)
+            
+            # Handle click events
+            elif pressed is not None:  # Click event
                 if button == mouse.Button.left:
                     if pressed:
                         screenshot_num = self.take_screenshot_around_click(x, y)
@@ -161,7 +145,8 @@ class MouseRecorder:
                 self.last_timestamp = current_time
                 
             if event_data:
-                self.recorder.handle_mouse_event(event_data)  # Send to main recorder
+                self.recorder.handle_mouse_event(event_data)
+                self.last_timestamp = current_time
                 
         except Exception as e:
             logging.error(f"Error processing mouse event: {e}")
