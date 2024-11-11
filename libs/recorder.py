@@ -291,30 +291,31 @@ class Recorder:
         if self.running:
             self.stop()
         
-        # Store previous actions if any exist
-        if self.actions:
-            self.base_actions = self.actions.copy()
-            
         # Reset state for new recording
         self.current_actions = []
         self.running = True
         self.is_recording = True
-        self.last_timestamp = time.time()  # Update timestamp
-        self.start_time = self.last_timestamp
+        self.start_time = time.time()  # Set start_time first
+        self.last_timestamp = self.start_time
         
+        # Store previous actions if any exist
+        if self.actions:
+            self.base_actions = self.actions.copy()
+            
         # Start listeners
         self.start_listening()
-        logging.info(f"Started new recording session (existing actions: {len(self.base_actions)})")
+        logging.info(f"Started new recording session at {self.start_time:.3f} (existing actions: {len(self.base_actions)})")
 
     def stop(self):
         """Stops recording and generates macro code"""
         if not self.running:
             return self._last_generated_code or self.macro_generator.generate_code(self.actions)
-            
+        
+        logging.info("Stopping recording...")
         self.running = False
         self.is_recording = False
         
-        # Stop listeners
+        # Stop listeners first
         keyboard.unhook_all()
         if self.mouse_listener:
             self.mouse_listener.stop()
@@ -322,6 +323,10 @@ class Recorder:
         # Wait for mouse thread
         if hasattr(self, 'mouse_thread') and self.mouse_thread.is_alive():
             self.mouse_thread.join(timeout=1.0)
+        
+        # Clear timing variables last
+        self.start_time = None
+        self.last_timestamp = 0
         
         # Combine base actions with current recording
         if self.current_actions:  # Only combine if there are new actions
@@ -378,10 +383,21 @@ class Recorder:
             time.sleep(self.position_check_interval)
     
     def on_keyboard_event(self, event):
+        """Handle keyboard events with additional safety checks"""
         if not self.is_recording:
             return
-        
+            
         try:
+            # Verify recording state and timing
+            if self.start_time is None:
+                logging.warning("Keyboard event received but start_time is None")
+                return
+                
+            current_time = time.time()
+            if current_time < self.start_time:
+                logging.warning("Invalid timestamp detected")
+                return
+                
             # Skip events with None key name
             if event.name is None:
                 return
@@ -391,17 +407,17 @@ class Recorder:
             if not normalized_key:  # Skip empty keys
                 return
                 
-            timestamp = time.time() - self.start_time
+            timestamp = current_time - self.start_time
             
             if event.event_type == 'down':
                 self.current_actions.append(('keydown', normalized_key, timestamp))
-                logging.debug(f"Recorded keydown: {normalized_key}")
+                logging.debug(f"Recorded keydown: {normalized_key} at {timestamp:.3f}s")
             elif event.event_type == 'up':
                 self.current_actions.append(('keyup', normalized_key, timestamp))
-                logging.debug(f"Recorded keyup: {normalized_key}")
+                logging.debug(f"Recorded keyup: {normalized_key} at {timestamp:.3f}s")
                 
         except Exception as e:
-            logging.error(f"Error processing keyboard event: {e}")
+            logging.error(f"Error processing keyboard event: {e}", exc_info=True)
 
     def filter_repeated_event(self, timestamp, event_type, x, y):
         """Filters out too frequent repeated events"""
@@ -418,7 +434,7 @@ class Recorder:
     
     def on_mouse_event(self, x, y, button=None, pressed=None, delta=0):
         """Optimized mouse event handler"""
-        if not self.is_recording:
+        if not self.is_recording or self.start_time is None:
             return
             
         try:

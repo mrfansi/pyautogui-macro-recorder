@@ -1,13 +1,8 @@
-import threading
 import time
 from pathlib import Path
 import pyautogui
-from PIL import Image
-import re
 import traceback
 import sys
-import cv2
-import numpy as np
 import logging
 
 # Configure logging with the correct encoding

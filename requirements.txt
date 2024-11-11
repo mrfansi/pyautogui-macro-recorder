@@ -3,3 +3,4 @@ keyboard
 Pillow
 tkcode
 pynput
+PyQt5
