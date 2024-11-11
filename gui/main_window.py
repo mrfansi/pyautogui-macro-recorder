@@ -334,19 +334,15 @@ class MainWindow(QtWidgets.QMainWindow):
                 if not code.strip():
                     return
                 
-                def play_thread():
-                    try:
-                        self.player.play(code)
-                        self.playbackFinishedSignal.emit()
-                        self.logSignal.emit(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - INFO - Macro playback finished")
-                    except pyautogui.FailSafeException:
-                        self.failSafeSignal.emit()
-                    except Exception as e:
-                        print(f"Error during playback: {str(e)}")
-                        self.playbackErrorSignal.emit()
-                
-                thread = threading.Thread(target=play_thread, daemon=True)
-                thread.start()
+                try:
+                    self.player.play(code)
+                    self.playbackFinishedSignal.emit()
+                    self.logSignal.emit(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - INFO - Macro playback finished")
+                except pyautogui.FailSafeException:
+                    self.failSafeSignal.emit()
+                except Exception as e:
+                    print(f"Error during playback: {str(e)}")
+                    self.playbackErrorSignal.emit()
                 
             except Exception as e:
                 print(f"Error starting playback: {str(e)}")
