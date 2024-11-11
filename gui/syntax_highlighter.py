@@ -1,6 +1,6 @@
 import re
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor, QFont
 
 class PythonHighlighter(QSyntaxHighlighter):
     def __init__(self, parent=None):

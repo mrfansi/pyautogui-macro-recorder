@@ -166,3 +166,37 @@ class MouseRecorder:
         except Exception as e:
             logging.error(f"Error processing mouse event: {e}")
             return None
+
+# Add test functionality
+def test_recording(duration=10):
+    """Run a test recording for specified duration"""
+    import tempfile
+    from pathlib import Path
+    
+    # Create temporary directory for screenshots
+    temp_dir = Path(tempfile.mkdtemp())
+    
+    # Simple recorder mock class
+    class SimpleRecorder:
+        def handle_mouse_event(self, event_data):
+            print(f"Recorded event: {event_data}")
+    
+    # Create and start recorder
+    recorder = MouseRecorder(temp_dir, SimpleRecorder())
+    print(f"Starting recording for {duration} seconds...")
+    print("Move your mouse, click, or scroll to generate events")
+    
+    start_time = time.time()
+    recorder.start(start_time)
+    
+    try:
+        time.sleep(duration)
+    except KeyboardInterrupt:
+        print("\nRecording interrupted by user")
+    finally:
+        recorder.stop()
+        print(f"Recording stopped. Screenshots saved in: {temp_dir}")
+
+if __name__ == "__main__":
+    # Run test recording when script is executed directly
+    test_recording()

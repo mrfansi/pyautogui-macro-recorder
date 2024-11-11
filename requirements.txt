@@ -3,4 +3,5 @@ keyboard
 Pillow
 tkcode
 pynput
-PyQt5
+PySide6
+pyinstaller

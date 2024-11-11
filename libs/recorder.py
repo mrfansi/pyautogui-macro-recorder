@@ -2,9 +2,17 @@ import time
 from pathlib import Path
 import shutil
 import logging
-from .macro_generator import MacroGenerator
-from .keyboard_recorder import KeyboardRecorder
-from .mouse_recorder import MouseRecorder
+
+# Handle both package and direct script usage
+try:
+    from .macro_generator import MacroGenerator
+    from .keyboard_recorder import KeyboardRecorder
+    from .mouse_recorder import MouseRecorder
+except ImportError:
+    # When running directly as a script
+    from macro_generator import MacroGenerator
+    from keyboard_recorder import KeyboardRecorder
+    from mouse_recorder import MouseRecorder
 
 class Recorder:
     def __init__(self):
@@ -170,3 +178,21 @@ class Recorder:
                     event_data['delta'],
                     event_data['timestamp']
                 ))
+
+def test_recorder():
+    """Simple test function to demonstrate recorder functionality"""
+    recorder = Recorder()
+    print("Starting recorder in 3 seconds...")
+    time.sleep(3)
+    
+    recorder.start()
+    print("Recording started - move your mouse and press some keys")
+    print("Recording will stop in 10 seconds...")
+    time.sleep(10)
+    
+    generated_code = recorder.stop()
+    print("\nGenerated Python code:")
+    print(generated_code)
+
+if __name__ == "__main__":
+    test_recorder()

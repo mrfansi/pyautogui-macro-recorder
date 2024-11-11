@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets, QtGui, QtCore
+from PySide6 import QtWidgets, QtGui, QtCore
 
 class StyledButton(QtWidgets.QPushButton):
     def __init__(self, text, parent=None):

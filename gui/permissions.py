@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QPushButton, QLabel, QProgressBar
-from PyQt5.QtCore import Qt, QTimer
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QPushButton, QLabel, QProgressBar
+from PySide6.QtCore import Qt, QTimer
 import os
 import sys
 import keyboard

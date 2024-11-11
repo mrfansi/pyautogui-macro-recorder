@@ -1,9 +1,10 @@
 import shutil
 import threading
-from PyQt5 import QtWidgets, QtGui, QtCore
+from PySide6 import QtWidgets, QtGui, QtCore
 from pathlib import Path
 import logging
 import time
+import sys
 
 import pyautogui
 from .settings_dialog import SettingsDialog
@@ -11,17 +12,39 @@ from .syntax_highlighter import PythonHighlighter
 from .code_editor import CodeEditor
 
 class MainWindow(QtWidgets.QMainWindow):
-    # Define signals
-    playbackFinishedSignal = QtCore.pyqtSignal()
-    playbackErrorSignal = QtCore.pyqtSignal()
-    failSafeSignal = QtCore.pyqtSignal()
-    logSignal = QtCore.pyqtSignal(str)
+    # Define signals with new syntax
+    playbackFinishedSignal = QtCore.Signal()
+    playbackErrorSignal = QtCore.Signal() 
+    failSafeSignal = QtCore.Signal()
+    logSignal = QtCore.Signal(str)
     
     def __init__(self, recorder, player, settings):
         super().__init__()
-        self.recorder = recorder
-        self.player = player
-        self.settings = settings
+        
+        # Add debug logging
+        logging.basicConfig(level=logging.DEBUG)
+        self.logger = logging.getLogger(__name__)
+        
+        # Verify recorder
+        if recorder is None:
+            raise RuntimeError("Recorder object is None")
+            
+        try:
+            # Test recorder methods exist
+            if not hasattr(recorder, 'start') or not hasattr(recorder, 'stop'):
+                raise RuntimeError("Recorder missing required methods")
+                
+            self.recorder = recorder
+            self.player = player
+            self.settings = settings
+            
+            self.logger.debug("Recorder initialized successfully")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to initialize recorder: {e}")
+            QtWidgets.QMessageBox.critical(self, "Error", 
+                f"Failed to initialize recorder:\n{str(e)}")
+            sys.exit(1)
         
         # Application states
         self.is_recording = False
@@ -325,20 +348,20 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.is_playing = False
                 self.update_button_states()
     
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def playback_finished(self):
         """Playback finished handler"""
         self.is_playing = False
         self.update_button_states()
     
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def playback_error(self):
         """Playback error handler"""
         self.is_playing = False
         self.update_button_states()
         QtWidgets.QMessageBox.critical(self, "Error", "An error occurred while playing the macro")
     
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def handle_failsafe(self):
         """PyAutoGUI failsafe handler"""
         self.is_playing = False
@@ -353,74 +376,57 @@ class MainWindow(QtWidgets.QMainWindow):
     
     def toggle_recording(self):
         """Toggle recording state"""
-        if not self.recording_active:
-            # Start recording
-            always_new = self.settings.value('general/always_new_record', False, type=bool)
-            
-            if always_new or not self.code_text.toPlainText().strip():
-                self.recorder.clear_recording()
-                self.code_text.clear()
-                # Clear gallery
-                for i in reversed(range(self.gallery_layout.count())):
-                    widget = self.gallery_layout.itemAt(i).widget()
-                    if widget is not None:
-                        widget.deleteLater()
-            else:
-                if self.code_text.toPlainText().strip():
-                    reply = QtWidgets.QMessageBox.question(
-                        self,
-                        'Start Recording',
-                        'Do you want to:\n\n'
-                        'Yes - Add to existing recording\n'
-                        'No - Start new recording\n'
-                        'Cancel - Cancel',
-                        QtWidgets.QMessageBox.Yes | 
-                        QtWidgets.QMessageBox.No | 
-                        QtWidgets.QMessageBox.Cancel
-                    )
-                    
-                    if reply == QtWidgets.QMessageBox.Cancel:
-                        self.record_button.setChecked(False)
-                        return
-                    
-                    if reply == QtWidgets.QMessageBox.No:
-                        self.recorder.clear_recording()
-                        self.code_text.clear()
-                        # Clear gallery
-                        for i in reversed(range(self.gallery_layout.count())):
-                            widget = self.gallery_layout.itemAt(i).widget()
-                            if widget is not None:
-                                widget.deleteLater()
-            
-            try:
-                self.recording_active = True
-                self.record_button.setText("■ Stop")
-                self.record_button.setStyleSheet("QPushButton { color: red; }")
-                self.recorder.start()
-                self.add_log("Recording started...")
-            except Exception as e:
-                self.add_log(f"Error starting recording: {str(e)}", "ERROR")
-                self.recording_active = False
-                self.record_button.setText("● Record")
-                self.record_button.setChecked(False)
-                self.record_button.setStyleSheet("")
-        else:
-            try:
-                # Stop recording
-                self.recording_active = False
-                self.record_button.setText("● Record")
-                self.record_button.setStyleSheet("")
-                recorded_code = self.recorder.stop()
-                if recorded_code:
-                    self.code_text.setPlainText(recorded_code)
-                    self.update_gallery()
-                    self.add_log("Recording stopped, code generated.")
-                else:
-                    self.add_log("No actions recorded.", "WARNING")
-            except Exception as e:
-                self.add_log(f"Error stopping recording: {str(e)}", "ERROR")
+        try:
+            if not self.recording_active:
+                self.logger.debug("Starting recording...")
                 
-        self.update_button_states()
+                # Verify recorder is still valid
+                if not hasattr(self, 'recorder') or self.recorder is None:
+                    raise RuntimeError("Recorder not available")
+                    
+                # Execute recorder.start() in try block
+                try:
+                    self.recording_active = True
+                    self.record_button.setText("■ Stop")
+                    self.record_button.setStyleSheet("QPushButton { color: red; }")
+                    self.recorder.start()
+                    self.logger.debug("Recording started successfully")
+                    self.add_log("Recording started...")
+                except Exception as e:
+                    self.logger.error(f"Failed to start recording: {e}")
+                    raise RuntimeError(f"Failed to start recording: {e}")
+                    
+            else:
+                self.logger.debug("Stopping recording...")
+                self.add_log("Stopping recording...")
+                self.recording_active = False
+                self.record_button.setText("● Record")
+                self.record_button.setStyleSheet("")
+                
+                try:
+                    recorded_code = self.recorder.stop()
+                    if recorded_code:
+                        self.code_text.setPlainText(recorded_code)
+                        self.update_gallery()
+                        self.add_log("Recording stopped, code generated.")
+                    else:
+                        self.add_log("No actions recorded.", "WARNING")
+                except Exception as e:
+                    self.add_log(f"Error stopping recording: {str(e)}", "ERROR")
+                    raise
+                    
+        except Exception as e:
+            self.logger.error(f"Recording error: {e}")
+            # Reset state on any error
+            self.recording_active = False
+            self.record_button.setText("● Record")
+            self.record_button.setChecked(False)
+            self.record_button.setStyleSheet("")
+            self.add_log(f"Recording error: {str(e)}", "ERROR")
+            QtWidgets.QMessageBox.critical(self, "Error", f"Recording failed: {str(e)}")
+        
+        finally:
+            self.update_button_states()
 
     def update_button_states(self):
         """Update button states based on current activity"""
@@ -496,16 +502,16 @@ class MainWindow(QtWidgets.QMainWindow):
         play_seq = QtGui.QKeySequence(self.settings.value('shortcuts/play', 'F5'))
         record_seq = QtGui.QKeySequence(self.settings.value('shortcuts/record', 'F6'))
         
-        # Bind shortcuts
-        save_shortcut = QtWidgets.QShortcut(save_seq, self)
+        # Bind shortcuts - Change QtWidgets.QShortcut to QtGui.QShortcut
+        save_shortcut = QtGui.QShortcut(save_seq, self)
         save_shortcut.activated.connect(self.save_project)
         self.shortcut_bindings.append(save_shortcut)
         
-        play_shortcut = QtWidgets.QShortcut(play_seq, self)
+        play_shortcut = QtGui.QShortcut(play_seq, self)
         play_shortcut.activated.connect(self.start_playback)
         self.shortcut_bindings.append(play_shortcut)
         
-        record_shortcut = QtWidgets.QShortcut(record_seq, self)
+        record_shortcut = QtGui.QShortcut(record_seq, self)
         record_shortcut.activated.connect(self.toggle_recording)
         self.shortcut_bindings.append(record_shortcut)
         

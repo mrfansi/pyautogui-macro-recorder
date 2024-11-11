@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets, QtGui, QtCore
+from PySide6 import QtWidgets, QtGui, QtCore
 
 class LineNumberArea(QtWidgets.QWidget):
     def __init__(self, editor):
@@ -16,6 +16,7 @@ class CodeEditor(QtWidgets.QPlainTextEdit):
         super().__init__(parent)
         self.line_number_area = LineNumberArea(self)
         
+        # Update signal connections for PySide6
         self.blockCountChanged.connect(self.updateLineNumberAreaWidth)
         self.updateRequest.connect(self.updateLineNumberArea)
         
@@ -59,14 +60,15 @@ class CodeEditor(QtWidgets.QPlainTextEdit):
         menu.exec_(self.mapToGlobal(position))
 
     def keyPressEvent(self, event):
-        # Allow only copy/select shortcuts
+        # Update key sequence matches for PySide6
         if event.matches(QtGui.QKeySequence.Copy) or \
            event.matches(QtGui.QKeySequence.SelectAll):
             super().keyPressEvent(event)
 
     def line_number_area_width(self):
         digits = len(str(max(1, self.blockCount())))
-        space = 3 + self.fontMetrics().width('9') * digits
+        # Replace width() with horizontalAdvance()
+        space = 3 + self.fontMetrics().horizontalAdvance('9') * digits
         return space
 
     def updateLineNumberAreaWidth(self, _):
